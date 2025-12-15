@@ -98,12 +98,24 @@ class Executor:
         return assets
 
     # --- Tool Wrappers (Real Mode) ---
+    def _run_tool(self, cmd: list, output_path: Path):
+        print(f"  Running: {' '.join(cmd)}")
+        try:
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            print(f"  ❌ Error running {' '.join(cmd)}: {e.stderr}")
+            raise
+        
+        if not output_path.exists() or output_path.stat().st_size == 0:
+            print(f"  ❌ Tool finished but output file is missing or empty: {output_path}")
+            # Depending on robustness needs, we might raise or allow partial failure
+            # For now, let's allow it but log it clearly
+            pass
+
     def _run_veo(self, prompt: str, duration: int, output_path: Path, ref_image: Optional[Path]):
         cmd = [settings.VEO_CMD, prompt, "--duration", str(duration), "--aspect-ratio", "16:9", "--output-file", str(output_path)]
         if ref_image: cmd.extend(["--ref-images", str(ref_image)])
-        
-        print(f"  Running Veo: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True, capture_output=True)
+        self._run_tool(cmd, output_path)
 
     def _run_image_gen(self, prompt: str, output_path: Path):
         cmd = [
@@ -116,8 +128,7 @@ class Executor:
             "--image-size", "4K",
             "--aspect-ratio", "16:9"
         ]
-        print(f"  Running ImageGen: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True, capture_output=True)
+        self._run_tool(cmd, output_path)
 
     def _run_tts(self, text: str, voice: str, output_path: Path):
         cmd = [
@@ -127,8 +138,7 @@ class Executor:
             "--output-file", str(output_path),
             "--audio-format", "MP3"
         ]
-        print(f"  Running TTS: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True, capture_output=True)
+        self._run_tool(cmd, output_path)
 
     def _run_music(self, prompt: str, duration: int, output_path: Path):
         cmd = [
@@ -138,5 +148,4 @@ class Executor:
             "--output", str(output_path),
             "--format", "mp3"
         ]
-        print(f"  Running Music: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True, capture_output=True)
+        self._run_tool(cmd, output_path)
