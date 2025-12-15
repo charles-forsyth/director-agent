@@ -75,6 +75,7 @@ class Planner:
                     "id": 1,
                     "duration": 4,
                     "visual_prompt": "Detailed prompt for AI video generator (Veo), cinematic, 16:9",
+                    "visual_type": "video",  // Use "image" for static shots/diagrams
                     "narration_text": "Script for the narrator.",
                     "voice_id": "Charon",
                     "music_prompt": "Mood description for AI music generator",
