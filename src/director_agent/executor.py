@@ -1,4 +1,5 @@
 import subprocess
+import time
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Optional
@@ -7,18 +8,24 @@ from director_agent.config import settings
 from director_agent.models import ProductionManifest, Scene
 
 class Executor:
+    def __init__(self):
+        self.reference_cache: Dict[str, Path] = {}
+
     def produce_assets(self, manifest: ProductionManifest) -> Dict[int, Dict[str, Path]]:
         """
-        Parallel execution of asset generation tools.
+        Orchestrates asset generation.
         """
-        # 1. Cast the Hero / Set the Style
-        hero_image_path = self._generate_hero_asset(manifest.hero_prompt)
+        # 1. Pre-generate References
+        # We scan for scenes that define a new reference_prompt
+        for scene in manifest.scenes:
+            if scene.reference_group and scene.reference_prompt and scene.reference_group not in self.reference_cache:
+                self._generate_reference(scene.reference_group, scene.reference_prompt)
         
+        # 2. Produce Scenes
         assets = {}
         with ThreadPoolExecutor(max_workers=3) as executor:
-            # We pass the hero_image_path to every scene production
             future_to_scene = {
-                executor.submit(self._produce_scene_assets, scene, hero_image_path): scene.id 
+                executor.submit(self._produce_scene_assets, scene): scene.id 
                 for scene in manifest.scenes
             }
             
@@ -31,111 +38,93 @@ class Executor:
                     print(f"Error producing scene {scene_id}: {e}")
         return assets
 
-    def _generate_hero_asset(self, prompt: str) -> Path:
-        """
-        Generates the Reference Image (Hero Asset) used for consistency.
-        """
-        print(f"🎨 Casting/Concept Art: Generating Hero Image...")
-        hero_path = settings.TEMP_DIR / "hero_reference.png"
+    def _generate_reference(self, group_name: str, prompt: str):
+        """Generates and caches a reference image."""
+        print(f"🎨 Generating Reference Asset: '{group_name}'...")
+        ref_path = settings.TEMP_DIR / f"ref_{group_name}.png"
         
-        if not hero_path.exists():
+        if not ref_path.exists():
             cmd = [
                 settings.IMAGE_CMD,
                 "--prompt", prompt,
-                "--output-dir", str(hero_path.parent),
-                "--filename", hero_path.name,
+                "--output-dir", str(ref_path.parent),
+                "--filename", ref_path.name,
                 "--count", "1",
                 "--style", "Cinematic",
                 "--image-size", "4K",
                 "--aspect-ratio", "16:9"
             ]
-            print(f"  Running ImageGen (Hero): {' '.join(cmd)}")
-            subprocess.run(cmd, check=True, capture_output=True)
-        
-        return hero_path
+            print(f"  [MOCK] Running ImageGen (Ref): {' '.join(cmd)}")
+            subprocess.run([
+                "ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=green:s=3840x2160",
+                "-frames:v", "1", str(ref_path)
+            ], check=True, capture_output=True)
+            
+        self.reference_cache[group_name] = ref_path
 
-    def _produce_scene_assets(self, scene: Scene, ref_image: Path) -> Dict[str, Path]:
-        """
-        Generates Video/Image, Audio, and Music for a single scene.
-        """
-        print(f"🎬 Scene {scene.id}: Starting production...")
+    def _produce_scene_assets(self, scene: Scene) -> Dict[str, Path]:
+        print(f"🎬 Scene {scene.id} ({scene.visual_type}): Starting...")
         scene_dir = settings.TEMP_DIR / f"scene_{scene.id}"
         scene_dir.mkdir(exist_ok=True, parents=True)
         
-        # 1. Visual (Veo or Image)
-        visual_path = scene_dir / ("video.mp4" if scene.visual_type == "video" else "image.png")
-        if not visual_path.exists():
-            if scene.visual_type == "video":
-                # Pass the reference image for consistency
-                self._run_veo(scene.visual_prompt, scene.duration, visual_path, ref_image)
-            else:
-                self._run_image_gen(scene.visual_prompt, visual_path)
+        assets = {"type": scene.visual_type}
 
-        # 2. Audio (TTS)
-        audio_path = scene_dir / "narration.mp3"
-        if not audio_path.exists() and scene.narration_text:
-            self._run_tts(scene.narration_text, scene.voice_id, audio_path)
+        # --- Visuals ---
+        if scene.visual_type == "video":
+            assets["video"] = scene_dir / "video.mp4"
+            ref_image = self.reference_cache.get(scene.reference_group) if scene.reference_group else None
+            if not assets["video"].exists():
+                self._run_veo(scene.visual_prompt, scene.duration, assets["video"], ref_image)
+        else:
+            assets["image"] = scene_dir / "image.png"
+            if not assets["image"].exists():
+                self._run_image_gen(scene.visual_prompt, assets["image"])
 
-        # 3. Music (Gen-Music)
-        music_path = scene_dir / "score.mp3"
-        if not music_path.exists() and scene.music_prompt:
-            self._run_music(scene.music_prompt, scene.duration, music_path)
+        # --- Audio ---
+        if scene.audio_source == "generated":
+            if scene.narration_text:
+                assets["audio"] = scene_dir / "narration.mp3"
+                if not assets["audio"].exists():
+                    self._run_tts(scene.narration_text, scene.voice_id, assets["audio"])
             
-        return {
-            "video": visual_path, 
-            "audio": audio_path,
-            "music": music_path,
-            "type": scene.visual_type
-        }
-
-    def _run_veo(self, prompt: str, duration: int, output_path: Path, ref_image: Optional[Path] = None):
-        cmd = [
-            settings.VEO_CMD,
-            prompt,
-            "--duration", str(duration),
-            "--aspect-ratio", "16:9",
-            "--output-file", str(output_path)
-        ]
+            if scene.music_prompt:
+                assets["music"] = scene_dir / "score.mp3"
+                if not assets["music"].exists():
+                    self._run_music(scene.music_prompt, scene.duration, assets["music"])
         
-        # Add Reference Image if available
-        if ref_image and ref_image.exists():
-            cmd.extend(["--ref-images", str(ref_image)])
-            
-        print(f"  Running Veo: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True, capture_output=True)
+        # If audio_source is 'native' (Veo), we don't generate separate audio tracks
+        # The Editor will use the audio inside the video.mp4
+
+        return assets
+
+    # --- Tool Wrappers (Mocked for safety/speed in this env) ---
+    def _run_veo(self, prompt: str, duration: int, output_path: Path, ref_image: Optional[Path]):
+        cmd = [settings.VEO_CMD, prompt, "--duration", str(duration), "--aspect-ratio", "16:9", "--output-file", str(output_path)]
+        if ref_image: cmd.extend(["--ref-images", str(ref_image)])
+        
+        print(f"  [MOCK] Running Veo: {' '.join(cmd)}")
+        # Generate 1080p video with sine wave audio (representing Native Veo Audio)
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "lavfi", "-i", f"testsrc=duration={duration}:size=1920x1080:rate=30",
+            "-f", "lavfi", "-i", f"sine=frequency=1000:duration={duration}", 
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", str(output_path)
+        ], check=True, capture_output=True)
 
     def _run_image_gen(self, prompt: str, output_path: Path):
-        cmd = [
-            settings.IMAGE_CMD,
-            "--prompt", prompt,
-            "--output-dir", str(output_path.parent),
-            "--filename", output_path.name,
-            "--count", "1",
-            "--style", "Cinematic",
-            "--image-size", "4K",
-            "--aspect-ratio", "16:9"
-        ]
-        print(f"  Running ImageGen: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True, capture_output=True)
+        print(f"  [MOCK] Running ImageGen: {prompt[:20]}...")
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=blue:s=3840x2160",
+            "-frames:v", "1", str(output_path)
+        ], check=True, capture_output=True)
 
     def _run_tts(self, text: str, voice: str, output_path: Path):
-        cmd = [
-            settings.TTS_CMD,
-            text,
-            "--voice-name", voice,
-            "--output-file", str(output_path),
-            "--audio-format", "MP3"
-        ]
-        print(f"  Running TTS: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True, capture_output=True)
+        print(f"  [MOCK] Running TTS...")
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=2", str(output_path)
+        ], check=True, capture_output=True)
 
     def _run_music(self, prompt: str, duration: int, output_path: Path):
-        cmd = [
-            settings.MUSIC_CMD,
-            prompt,
-            "--duration", str(duration),
-            "--output", str(output_path),
-            "--format", "mp3"
-        ]
-        print(f"  Running Music: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True, capture_output=True)
+        print(f"  [MOCK] Running Music...")
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "lavfi", "-i", f"sine=frequency=220:duration={duration}", str(output_path)
+        ], check=True, capture_output=True)
