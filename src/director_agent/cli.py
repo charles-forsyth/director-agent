@@ -19,6 +19,9 @@ def action(
     if verbose:
         logging.basicConfig(level=logging.INFO)
     
+    # 1. Check for First Run / Missing Config
+    settings.check_setup()
+
     if output_dir:
         settings.OUTPUT_DIR = output_dir
 
