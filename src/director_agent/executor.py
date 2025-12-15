@@ -68,12 +68,11 @@ class Executor:
             "--aspect-ratio", "16:9",
             "--output-file", str(output_path)
         ]
-        # Mock execution: Generate valid test video
-        print(f"  [MOCK] Generating test video: {output_path.name}")
-        # Generate 720p color bars
+        # Mock execution: Generate valid 1080p test video
+        print(f"  [MOCK] Generating test video (1080p): {output_path.name}")
         subprocess.run([
-            "ffmpeg", "-f", "lavfi", "-i", f"testsrc=duration={duration}:size=1280x720:rate=30",
-            "-f", "lavfi", "-i", f"sine=frequency=1000:duration={duration}", # Add silent audio track to match Veo output
+            "ffmpeg", "-f", "lavfi", "-i", f"testsrc=duration={duration}:size=1920x1080:rate=30",
+            "-f", "lavfi", "-i", f"sine=frequency=1000:duration={duration}", 
             "-c:v", "libx264", "-c:a", "aac", "-shortest",
             str(output_path)
         ], check=True, capture_output=True)
@@ -85,12 +84,14 @@ class Executor:
             "--output-dir", str(output_path.parent),
             "--filename", output_path.name,
             "--count", "1",
-            "--style", "Cinematic"
+            "--style", "Cinematic",
+            "--image-size", "4K", # Request 4K for images
+            "--aspect-ratio", "16:9"
         ]
-        print(f"  [MOCK] Generating test image: {output_path.name}")
-        # Generate a solid color image
+        print(f"  [MOCK] Generating test image (4K): {output_path.name}")
+        # Generate a solid color image at 4K resolution
         subprocess.run([
-            "ffmpeg", "-f", "lavfi", "-i", "color=c=blue:s=1280x720",
+            "ffmpeg", "-f", "lavfi", "-i", "color=c=blue:s=3840x2160",
             "-frames:v", "1", str(output_path)
         ], check=True, capture_output=True)
 
