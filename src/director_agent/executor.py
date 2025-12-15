@@ -103,28 +103,44 @@ class Executor:
         if ref_image: cmd.extend(["--ref-images", str(ref_image)])
         
         print(f"  [MOCK] Running Veo: {' '.join(cmd)}")
-        # Generate 1080p video with sine wave audio (representing Native Veo Audio)
+        # Robust Mock: Generate 1080p video with silent audio
+        # Using -t to force duration and -movflags +faststart for safety
         subprocess.run([
-            "ffmpeg", "-y", "-f", "lavfi", "-i", f"testsrc=duration={duration}:size=1920x1080:rate=30",
-            "-f", "lavfi", "-i", f"sine=frequency=1000:duration={duration}", 
-            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", str(output_path)
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", f"testsrc=size=1920x1080:rate=30",
+            "-f", "lavfi", "-i", "sine=frequency=1000",
+            "-t", str(duration),
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", 
+            "-movflags", "+faststart",
+            str(output_path)
         ], check=True, capture_output=True)
 
     def _run_image_gen(self, prompt: str, output_path: Path):
         print(f"  [MOCK] Running ImageGen: {prompt[:20]}...")
+        # Simple solid color image
         subprocess.run([
-            "ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=blue:s=3840x2160",
-            "-frames:v", "1", str(output_path)
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", "color=c=blue:s=3840x2160",
+            "-frames:v", "1",
+            str(output_path)
         ], check=True, capture_output=True)
 
     def _run_tts(self, text: str, voice: str, output_path: Path):
         print(f"  [MOCK] Running TTS...")
+        # 2 seconds of audio
         subprocess.run([
-            "ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=2", str(output_path)
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=440",
+            "-t", "2",
+            str(output_path)
         ], check=True, capture_output=True)
 
     def _run_music(self, prompt: str, duration: int, output_path: Path):
         print(f"  [MOCK] Running Music...")
+        # Exact duration audio
         subprocess.run([
-            "ffmpeg", "-y", "-f", "lavfi", "-i", f"sine=frequency=220:duration={duration}", str(output_path)
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=220",
+            "-t", str(duration),
+            str(output_path)
         ], check=True, capture_output=True)
