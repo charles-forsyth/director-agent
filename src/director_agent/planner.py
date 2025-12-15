@@ -1,16 +1,16 @@
 import json
-import time
 import subprocess
 import google.generativeai as genai
-from typing import Optional
-from pathlib import Path
 from director_agent.config import settings
-from director_agent.core import ProductionManifest
+from director_agent.models import ProductionManifest
 
 class Planner:
     def __init__(self):
-        genai.configure(api_key=settings.GEMINI_API_KEY.get_secret_value())
-        self.model = genai.GenerativeModel('gemini-2.5-pro')
+        if settings.GEMINI_API_KEY:
+            genai.configure(api_key=settings.GEMINI_API_KEY.get_secret_value())
+            self.model = genai.GenerativeModel('gemini-2.5-pro')
+        else:
+            self.model = None
 
     def generate_manifest(self, topic: str) -> ProductionManifest:
         """
@@ -27,15 +27,9 @@ class Planner:
     def _run_deep_research(self, topic: str) -> str:
         """
         Calls the deep-research CLI tool.
-        Since deep-research is async/long-running, we might need to handle 'start' vs 'research'.
-        For simplicity in v1, we'll use the blocking 'research' command if available, 
-        or 'start' and poll.
         """
         print(f"🕵️  Researching: {topic}...")
-        # Using the streaming research command but capturing output
-        # In a real scenario, we'd want to use 'start' and poll 'list'
         try:
-            # We use --output to get a clean JSON or Markdown file we can read back
             output_file = settings.TEMP_DIR / "research_output.md"
             cmd = [
                 settings.DEEP_RESEARCH_CMD, "research", topic,
@@ -43,6 +37,7 @@ class Planner:
             ]
             
             # This is a blocking call. 
+            # We assume deep-research is in PATH.
             subprocess.run(cmd, check=True, capture_output=True)
             
             if output_file.exists():
@@ -51,7 +46,7 @@ class Planner:
                 return f"Research failed to produce output for {topic}"
                 
         except Exception as e:
-            print(f"Research error: {e}")
+            print(f"Research error (using fallback): {e}")
             return f"Basic knowledge about {topic}"
 
     def _synthesize_plan(self, topic: str, context: str) -> ProductionManifest:
@@ -60,6 +55,9 @@ class Planner:
         """
         print("🧠 Synthesizing execution plan...")
         
+        if not self.model:
+             raise ValueError("Gemini API Key is missing. Cannot synthesize plan.")
+
         prompt = f"""
         You are a Movie Director Agent.
         Goal: Create a short, engaging video documentary about "{topic}".

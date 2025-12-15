@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-director = "director_agent.cli:app"
+director = "director_agent.cli:main"
 
 [build-system]
 requires = ["hatchling"]

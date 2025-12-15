@@ -1,16 +1,12 @@
 import subprocess
-import shutil
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, Any
+from typing import Dict
 
 from director_agent.config import settings
-from director_agent.core import ProductionManifest, Scene
+from director_agent.models import ProductionManifest, Scene
 
 class Executor:
-    def __init__(self):
-        pass
-
     def produce_assets(self, manifest: ProductionManifest) -> Dict[int, Dict[str, Path]]:
         """
         Parallel execution of asset generation tools.
@@ -29,7 +25,6 @@ class Executor:
                     assets[scene_id] = scene_assets
                 except Exception as e:
                     print(f"Error producing scene {scene_id}: {e}")
-                    # TODO: Implement retry or fallback logic
         return assets
 
     def _produce_scene_assets(self, scene: Scene) -> Dict[str, Path]:
@@ -47,7 +42,6 @@ class Executor:
                 self._run_veo(scene.visual_prompt, scene.duration, visual_path)
             else:
                 self._run_image_gen(scene.visual_prompt, visual_path)
-                # Note: Editor will need to handle static images by looping them
 
         # 2. Audio (TTS)
         audio_path = scene_dir / "narration.mp3"
@@ -60,7 +54,7 @@ class Executor:
             self._run_music(scene.music_prompt, scene.duration, music_path)
             
         return {
-            "video": visual_path, # Editor treats this as the visual track
+            "video": visual_path, 
             "audio": audio_path,
             "music": music_path,
             "type": scene.visual_type
@@ -74,10 +68,9 @@ class Executor:
             "--aspect-ratio", "16:9",
             "--output-file", str(output_path)
         ]
-        # Mocking for now as tools might not exist in this environment
-        # subprocess.run(cmd, check=True, capture_output=True)
+        # Mock execution for safety in this environment
         print(f"  [MOCK] Running Veo: {' '.join(cmd)}")
-        self._create_mock_file(output_path)
+        output_path.touch()
 
     def _run_image_gen(self, prompt: str, output_path: Path):
         cmd = [
@@ -88,10 +81,8 @@ class Executor:
             "--count", "1",
             "--style", "Cinematic"
         ]
-        # Mocking for now
-        # subprocess.run(cmd, check=True, capture_output=True)
         print(f"  [MOCK] Running ImageGen: {' '.join(cmd)}")
-        self._create_mock_file(output_path)
+        output_path.touch()
 
     def _run_tts(self, text: str, voice: str, output_path: Path):
         cmd = [
@@ -101,10 +92,8 @@ class Executor:
             "--output-file", str(output_path),
             "--audio-format", "MP3"
         ]
-        # Mocking for now
-        # subprocess.run(cmd, check=True, capture_output=True)
         print(f"  [MOCK] Running TTS: {' '.join(cmd)}")
-        self._create_mock_file(output_path)
+        output_path.touch()
 
     def _run_music(self, prompt: str, duration: int, output_path: Path):
         cmd = [
@@ -114,10 +103,5 @@ class Executor:
             "--output", str(output_path),
             "--format", "mp3"
         ]
-        # Mocking for now
-        # subprocess.run(cmd, check=True, capture_output=True)
         print(f"  [MOCK] Running Music: {' '.join(cmd)}")
-        self._create_mock_file(output_path)
-        
-    def _create_mock_file(self, path: Path):
-        path.touch()
+        output_path.touch()

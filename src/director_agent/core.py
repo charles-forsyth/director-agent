@@ -1,18 +1,19 @@
 import logging
 from pathlib import Path
 from typing import Dict
+
 from director_agent.config import settings
+from director_agent.models import ProductionManifest
+# We can now import these at the top level because they import models.py, not core.py
 from director_agent.planner import Planner
 from director_agent.executor import Executor
 from director_agent.editor import Editor
-from director_agent.core import ProductionManifest # Import definition
-
-# --- Core Director Class ---
 
 class Director:
     def __init__(self):
         self.logger = logging.getLogger("director_agent")
         settings.ensure_dirs()
+        
         self.planner = Planner()
         self.executor = Executor()
         self.editor = Editor()
