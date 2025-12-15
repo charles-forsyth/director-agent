@@ -97,50 +97,46 @@ class Executor:
 
         return assets
 
-    # --- Tool Wrappers (Mocked for safety/speed in this env) ---
+    # --- Tool Wrappers (Real Mode) ---
     def _run_veo(self, prompt: str, duration: int, output_path: Path, ref_image: Optional[Path]):
         cmd = [settings.VEO_CMD, prompt, "--duration", str(duration), "--aspect-ratio", "16:9", "--output-file", str(output_path)]
         if ref_image: cmd.extend(["--ref-images", str(ref_image)])
         
-        print(f"  [MOCK] Running Veo: {' '.join(cmd)}")
-        # Robust Mock: Generate 1080p video with silent audio
-        # Using -t to force duration and -movflags +faststart for safety
-        subprocess.run([
-            "ffmpeg", "-y",
-            "-f", "lavfi", "-i", f"testsrc=size=1920x1080:rate=30",
-            "-f", "lavfi", "-i", "sine=frequency=1000",
-            "-t", str(duration),
-            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", 
-            "-movflags", "+faststart",
-            str(output_path)
-        ], check=True, capture_output=True)
+        print(f"  Running Veo: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True, capture_output=True)
 
     def _run_image_gen(self, prompt: str, output_path: Path):
-        print(f"  [MOCK] Running ImageGen: {prompt[:20]}...")
-        # Simple solid color image
-        subprocess.run([
-            "ffmpeg", "-y",
-            "-f", "lavfi", "-i", "color=c=blue:s=3840x2160",
-            "-frames:v", "1",
-            str(output_path)
-        ], check=True, capture_output=True)
+        cmd = [
+            settings.IMAGE_CMD,
+            "--prompt", prompt,
+            "--output-dir", str(output_path.parent),
+            "--filename", output_path.name,
+            "--count", "1",
+            "--style", "Cinematic",
+            "--image-size", "4K",
+            "--aspect-ratio", "16:9"
+        ]
+        print(f"  Running ImageGen: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True, capture_output=True)
 
     def _run_tts(self, text: str, voice: str, output_path: Path):
-        print(f"  [MOCK] Running TTS...")
-        # 2 seconds of audio
-        subprocess.run([
-            "ffmpeg", "-y",
-            "-f", "lavfi", "-i", "sine=frequency=440",
-            "-t", "2",
-            str(output_path)
-        ], check=True, capture_output=True)
+        cmd = [
+            settings.TTS_CMD,
+            text,
+            "--voice-name", voice,
+            "--output-file", str(output_path),
+            "--audio-format", "MP3"
+        ]
+        print(f"  Running TTS: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True, capture_output=True)
 
     def _run_music(self, prompt: str, duration: int, output_path: Path):
-        print(f"  [MOCK] Running Music...")
-        # Exact duration audio
-        subprocess.run([
-            "ffmpeg", "-y",
-            "-f", "lavfi", "-i", "sine=frequency=220",
-            "-t", str(duration),
-            str(output_path)
-        ], check=True, capture_output=True)
+        cmd = [
+            settings.MUSIC_CMD,
+            prompt,
+            "--duration", str(duration),
+            "--output", str(output_path),
+            "--format", "mp3"
+        ]
+        print(f"  Running Music: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True, capture_output=True)
