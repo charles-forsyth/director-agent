@@ -62,7 +62,7 @@ class Planner:
             "scenes": [
                 {{
                     "id": 1,
-                    "duration": 4,
+                    "duration": 4,  // STRICTLY 4, 6, or 8. NO OTHER VALUES.
                     "visual_type": "image",
                     "visual_prompt": "Wide shot of a misty harbor, oil painting style",
                     "audio_source": "generated",
@@ -71,7 +71,7 @@ class Planner:
                 }},
                 {{
                     "id": 2,
-                    "duration": 6,
+                    "duration": 6,  // STRICTLY 4, 6, or 8.
                     "visual_type": "video",
                     "visual_prompt": "A sailor pulling ropes on a boat, cinematic",
                     "reference_group": "sailor_1",
