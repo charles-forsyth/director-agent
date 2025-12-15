@@ -68,9 +68,15 @@ class Executor:
             "--aspect-ratio", "16:9",
             "--output-file", str(output_path)
         ]
-        # Mock execution for safety in this environment
-        print(f"  [MOCK] Running Veo: {' '.join(cmd)}")
-        output_path.touch()
+        # Mock execution: Generate valid test video
+        print(f"  [MOCK] Generating test video: {output_path.name}")
+        # Generate 720p color bars
+        subprocess.run([
+            "ffmpeg", "-f", "lavfi", "-i", f"testsrc=duration={duration}:size=1280x720:rate=30",
+            "-f", "lavfi", "-i", f"sine=frequency=1000:duration={duration}", # Add silent audio track to match Veo output
+            "-c:v", "libx264", "-c:a", "aac", "-shortest",
+            str(output_path)
+        ], check=True, capture_output=True)
 
     def _run_image_gen(self, prompt: str, output_path: Path):
         cmd = [
@@ -81,8 +87,12 @@ class Executor:
             "--count", "1",
             "--style", "Cinematic"
         ]
-        print(f"  [MOCK] Running ImageGen: {' '.join(cmd)}")
-        output_path.touch()
+        print(f"  [MOCK] Generating test image: {output_path.name}")
+        # Generate a solid color image
+        subprocess.run([
+            "ffmpeg", "-f", "lavfi", "-i", "color=c=blue:s=1280x720",
+            "-frames:v", "1", str(output_path)
+        ], check=True, capture_output=True)
 
     def _run_tts(self, text: str, voice: str, output_path: Path):
         cmd = [
@@ -92,8 +102,12 @@ class Executor:
             "--output-file", str(output_path),
             "--audio-format", "MP3"
         ]
-        print(f"  [MOCK] Running TTS: {' '.join(cmd)}")
-        output_path.touch()
+        print(f"  [MOCK] Generating test narration: {output_path.name}")
+        # Generate a sine wave beep for 2 seconds
+        subprocess.run([
+            "ffmpeg", "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
+            str(output_path)
+        ], check=True, capture_output=True)
 
     def _run_music(self, prompt: str, duration: int, output_path: Path):
         cmd = [
@@ -103,5 +117,9 @@ class Executor:
             "--output", str(output_path),
             "--format", "mp3"
         ]
-        print(f"  [MOCK] Running Music: {' '.join(cmd)}")
-        output_path.touch()
+        print(f"  [MOCK] Generating test music: {output_path.name}")
+        # Generate a lower tone for music
+        subprocess.run([
+            "ffmpeg", "-f", "lavfi", "-i", f"sine=frequency=220:duration={duration}",
+            str(output_path)
+        ], check=True, capture_output=True)

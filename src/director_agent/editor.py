@@ -39,24 +39,28 @@ class Editor:
             scene_out = str(output_path.parent / f"temp_scene_{scene.id}.mp4")
             
             try:
-                # Mocking ffmpeg execution for now since we are in a dev environment without real assets
-                print(f"  [MOCK] Rendering scene {scene.id} to {scene_out}")
-                Path(scene_out).touch()
+                # Real Render
+                # print(f"  Rendering scene {scene.id} to {scene_out}")
+                ffmpeg.output(video, audio_mix, scene_out, shortest=None, vcodec='libx264', acodec='aac').run(overwrite_output=True, quiet=True)
                 scene_clips.append(scene_out)
-            except Exception as e:
-                print(f"FFmpeg error on scene {scene.id}: {e}")
+            except ffmpeg.Error as e:
+                print(f"FFmpeg error on scene {scene.id}: {e.stderr.decode('utf8') if e.stderr else str(e)}")
 
         # 3. Concatenate
         if not scene_clips:
-            print("  [MOCK] No scenes to render.")
-            output_path.touch()
+            print("  [Error] No scenes to render.")
             return output_path
             
         try:
-             # Mock concat
-            print(f"  [MOCK] Concatenating to {output_path}")
-            output_path.touch()
-        except Exception as e:
-            print(f"FFmpeg concat error: {e}")
+             # Real Concat
+            # print(f"  Concatenating to {output_path}")
+            inputs = [ffmpeg.input(clip) for clip in scene_clips]
+            ffmpeg.concat(*inputs, v=1, a=1).output(str(output_path)).run(overwrite_output=True, quiet=True)
+        except ffmpeg.Error as e:
+            print(f"FFmpeg concat error: {e.stderr.decode('utf8') if e.stderr else str(e)}")
+
+        # Cleanup temp clips
+        for clip in scene_clips:
+            Path(clip).unlink(missing_ok=True)
 
         return output_path
