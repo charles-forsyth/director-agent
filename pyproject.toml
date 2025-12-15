@@ -22,6 +22,9 @@ director = "director_agent.cli:app"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/director_agent"]
+
 [tool.uv]
 dev-dependencies = [
     "pytest>=7.0",
