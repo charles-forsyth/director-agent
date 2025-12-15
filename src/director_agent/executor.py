@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict
+from typing import Dict, Optional
 
 from director_agent.config import settings
 from director_agent.models import ProductionManifest, Scene
@@ -11,10 +11,14 @@ class Executor:
         """
         Parallel execution of asset generation tools.
         """
+        # 1. Cast the Hero / Set the Style
+        hero_image_path = self._generate_hero_asset(manifest.hero_prompt)
+        
         assets = {}
         with ThreadPoolExecutor(max_workers=3) as executor:
+            # We pass the hero_image_path to every scene production
             future_to_scene = {
-                executor.submit(self._produce_scene_assets, scene): scene.id 
+                executor.submit(self._produce_scene_assets, scene, hero_image_path): scene.id 
                 for scene in manifest.scenes
             }
             
@@ -27,7 +31,30 @@ class Executor:
                     print(f"Error producing scene {scene_id}: {e}")
         return assets
 
-    def _produce_scene_assets(self, scene: Scene) -> Dict[str, Path]:
+    def _generate_hero_asset(self, prompt: str) -> Path:
+        """
+        Generates the Reference Image (Hero Asset) used for consistency.
+        """
+        print(f"🎨 Casting/Concept Art: Generating Hero Image...")
+        hero_path = settings.TEMP_DIR / "hero_reference.png"
+        
+        if not hero_path.exists():
+            cmd = [
+                settings.IMAGE_CMD,
+                "--prompt", prompt,
+                "--output-dir", str(hero_path.parent),
+                "--filename", hero_path.name,
+                "--count", "1",
+                "--style", "Cinematic",
+                "--image-size", "4K",
+                "--aspect-ratio", "16:9"
+            ]
+            print(f"  Running ImageGen (Hero): {' '.join(cmd)}")
+            subprocess.run(cmd, check=True, capture_output=True)
+        
+        return hero_path
+
+    def _produce_scene_assets(self, scene: Scene, ref_image: Path) -> Dict[str, Path]:
         """
         Generates Video/Image, Audio, and Music for a single scene.
         """
@@ -39,7 +66,8 @@ class Executor:
         visual_path = scene_dir / ("video.mp4" if scene.visual_type == "video" else "image.png")
         if not visual_path.exists():
             if scene.visual_type == "video":
-                self._run_veo(scene.visual_prompt, scene.duration, visual_path)
+                # Pass the reference image for consistency
+                self._run_veo(scene.visual_prompt, scene.duration, visual_path, ref_image)
             else:
                 self._run_image_gen(scene.visual_prompt, visual_path)
 
@@ -60,7 +88,7 @@ class Executor:
             "type": scene.visual_type
         }
 
-    def _run_veo(self, prompt: str, duration: int, output_path: Path):
+    def _run_veo(self, prompt: str, duration: int, output_path: Path, ref_image: Optional[Path] = None):
         cmd = [
             settings.VEO_CMD,
             prompt,
@@ -68,6 +96,11 @@ class Executor:
             "--aspect-ratio", "16:9",
             "--output-file", str(output_path)
         ]
+        
+        # Add Reference Image if available
+        if ref_image and ref_image.exists():
+            cmd.extend(["--ref-images", str(ref_image)])
+            
         print(f"  Running Veo: {' '.join(cmd)}")
         subprocess.run(cmd, check=True, capture_output=True)
 

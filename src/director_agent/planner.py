@@ -67,6 +67,7 @@ class Planner:
         {{
             "title": "Movie Title",
             "topic": "{topic}",
+            "hero_prompt": "A detailed description of the visual style and main character (e.g., 'A weathered old sailor with a white beard wearing a yellow raincoat, cinematic lighting, 4k, hyper-realistic').",
             "total_duration": 32,
             "scenes": [
                 {{

@@ -14,5 +14,6 @@ class Scene(BaseModel):
 class ProductionManifest(BaseModel):
     title: str
     topic: str
+    hero_prompt: str = Field(..., description="A detailed visual description of the main character, setting, or style to ensure consistency across all shots.")
     scenes: List[Scene]
     total_duration: int
