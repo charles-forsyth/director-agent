@@ -12,6 +12,7 @@ dependencies = [
     "typer>=0.9.0",
     "rich>=13.0",
     "ffmpeg-python>=0.2.0",
+    "google-generativeai>=0.3.0",
 ]
 
 [project.scripts]
