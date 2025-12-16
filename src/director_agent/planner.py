@@ -37,46 +37,35 @@ class Planner:
             return f"Basic knowledge about {topic}"
 
     def _synthesize_plan(self, topic: str, context: str) -> ProductionManifest:
-        print("🧠 Synthesizing execution plan (Mixed Media)...")
+        print("🧠 Synthesizing execution plan (Presentation Mode)...")
         
         if not self.model:
              raise ValueError("Gemini API Key is missing.")
 
         prompt = f"""
-        You are a Mixed-Media Movie Director.
-        Goal: Create a documentary about "{topic}" combining realistic video clips (Veo) and static illustrative images (NanoBanana).
+        You are a Documentary Director specializing in "Ken Burns" style visual storytelling.
+        Goal: Create a cinematic slideshow presentation about "{topic}" using high-resolution static imagery, narration, and music.
         Context: {context[:5000]} (truncated)
         
         Instructions:
-        1. **Mixed Media:** Use 'video' (Veo) for action/movement. Use 'image' (NanoBanana) for diagrams, establishing shots, or conceptual visuals.
-        2. **Consistency:** Group related video scenes using `reference_group`. Define a `reference_prompt` for the first scene of each group (e.g. "Main character face").
-        3. **Audio Strategy:**
-           - For **Video** scenes: Set `audio_source` to "native" (Let Veo generate the sound/voice).
-           - For **Image** scenes: Set `audio_source` to "generated" and provide `narration_text` + `music_prompt`.
+        1. **Visuals:** All scenes MUST use `visual_type="image"`. Describe rich, detailed, 4K static images (diagrams, photos, art).
+        2. **Audio:** Every scene needs `narration_text` and a `music_prompt`.
+        3. **Pacing:** Scenes should be 5-10 seconds long to allow for reading/viewing.
         
         Output: A strictly valid JSON object adhering to this schema:
         {{
             "title": "Movie Title",
             "topic": "{topic}",
-            "total_duration": 40,
+            "total_duration": 60,
             "scenes": [
                 {{
                     "id": 1,
-                    "duration": 4,  // STRICTLY 4, 6, or 8. NO OTHER VALUES.
+                    "duration": 6,
                     "visual_type": "image",
-                    "visual_prompt": "Wide shot of a misty harbor, oil painting style",
+                    "visual_prompt": "A high-resolution map of the ancient world, parchment texture, detailed labels, cinematic lighting",
                     "audio_source": "generated",
-                    "narration_text": "It began in the harbor...",
-                    "music_prompt": "Ocean waves and piano"
-                }},
-                {{
-                    "id": 2,
-                    "duration": 6,  // STRICTLY 4, 6, or 8.
-                    "visual_type": "video",
-                    "visual_prompt": "A sailor pulling ropes on a boat, cinematic",
-                    "reference_group": "sailor_1",
-                    "reference_prompt": "A weathered sailor in a yellow raincoat, detailed portrait",
-                    "audio_source": "native"
+                    "narration_text": "In the beginning, the world was vast and unknown...",
+                    "music_prompt": "Epic orchestral opening"
                 }}
             ]
         }}

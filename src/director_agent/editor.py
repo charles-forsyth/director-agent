@@ -5,7 +5,7 @@ from director_agent.models import ProductionManifest
 
 class Editor:
     def assemble(self, manifest: ProductionManifest, assets: Dict[int, Dict[str, Path]], output_path: Path) -> Path:
-        print("✂️  Assembling final cut (Mixed Media)...")
+        print("✂️  Assembling final cut (Presentation Mode)...")
         scene_clips = []
         
         for scene in manifest.scenes:
@@ -15,36 +15,28 @@ class Editor:
             scene_out = str(output_path.parent / f"temp_scene_{scene.id}.mp4")
             
             try:
-                if scene.visual_type == "video":
-                    # --- VIDEO SCENE (Veo) ---
-                    # We just use the video file directly (assuming native audio)
-                    # Ideally we re-encode to ensure concatenation compatibility
-                    video_in = ffmpeg.input(str(scene_data['video']))
-                    # Force 1080p, 30fps, specific codecs for consistency
-                    ffmpeg.output(video_in, scene_out, vcodec='libx264', acodec='aac', video_bitrate='5M', audio_bitrate='192k', r=30, s='1920x1080', pix_fmt='yuv420p').run(overwrite_output=True, quiet=True)
-                    
+                # --- IMAGE SCENE (with Ken Burns Effect) ---
+                # Zoom in 10% over the duration (z=zoom+0.0015)
+                image_in = ffmpeg.input(str(scene_data['image']), loop=1, t=scene.duration)
+                video_stream = image_in.filter('scale', '3840x2160').filter('zoompan', z='min(zoom+0.0015,1.5)', d=scene.duration*30, s='1920x1080')
+                
+                # Audio Mix
+                audio_path = scene_data.get('audio')
+                music_path = scene_data.get('music')
+                
+                if audio_path:
+                    narration = ffmpeg.input(str(audio_path)).audio
                 else:
-                    # --- IMAGE SCENE (NanoBanana + TTS + Music) ---
-                    image_in = ffmpeg.input(str(scene_data['image']), loop=1, t=scene.duration)
-                    
-                    # Audio Mix
-                    audio_path = scene_data.get('audio')
-                    music_path = scene_data.get('music')
-                    
-                    if audio_path:
-                        narration = ffmpeg.input(str(audio_path)).audio
-                    else:
-                        narration = ffmpeg.input('anullsrc', f='lavfi', t=scene.duration).audio
+                    narration = ffmpeg.input('anullsrc', f='lavfi', t=scene.duration).audio
 
-                    if music_path:
-                        music = ffmpeg.input(str(music_path)).audio.filter('volume', 0.3)
-                        audio_mix = ffmpeg.filter([narration, music], 'amix', inputs=2, duration='first')
-                    else:
-                        audio_mix = narration
-                    
-                    # Render Image Sequence to Video
-                    ffmpeg.output(image_in, audio_mix, scene_out, vcodec='libx264', acodec='aac', video_bitrate='5M', audio_bitrate='192k', r=30, s='1920x1080', pix_fmt='yuv420p', shortest=None).run(overwrite_output=True, quiet=True)
-
+                if music_path:
+                    music = ffmpeg.input(str(music_path)).audio.filter('volume', 0.3)
+                    audio_mix = ffmpeg.filter([narration, music], 'amix', inputs=2, duration='first')
+                else:
+                    audio_mix = narration
+                
+                # Render
+                ffmpeg.output(video_stream, audio_mix, scene_out, vcodec='libx264', acodec='aac', video_bitrate='5M', audio_bitrate='192k', r=30, pix_fmt='yuv420p', shortest=None).run(overwrite_output=True, quiet=True)
                 scene_clips.append(scene_out)
                 
             except ffmpeg.Error as e:
@@ -57,14 +49,13 @@ class Editor:
             
         try:
             # Safe concat
-            # Create a file list for ffmpeg concat demuxer (more robust than filter)
             list_file = output_path.parent / "concat_list.txt"
             with open(list_file, 'w') as f:
                 for clip in scene_clips:
                     f.write(f"file '{clip}'\n")
             
             ffmpeg.input(str(list_file), format='concat', safe=0).output(str(output_path), c='copy').run(overwrite_output=True, quiet=True)
-            list_file.unlink()
+            list_file.unlink() 
             
         except ffmpeg.Error as e:
             print(f"FFmpeg concat error: {e.stderr.decode('utf8') if e.stderr else str(e)}")

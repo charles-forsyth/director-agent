@@ -1,0 +1,26 @@
+[
+    {
+        "prompt": "Upbeat, commercial-style music fades out, returning to the contemplative piano.",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/scene_8/score.mp3",
+        "duration": 4,
+        "bpm": 120,
+        "timestamp": "2025-12-15T17:57:18.819227"
+    },
+    {
+        "prompt": "Lush, ambient jazz with a soft, warm piano melody.",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/scene_9/score.mp3",
+        "duration": 4,
+        "bpm": 120,
+        "timestamp": "2025-12-15T17:57:20.509533"
+    },
+    {
+        "prompt": "Creepy, atmospheric 16-bit chiptune music",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/scene_7/score.mp3",
+        "duration": 5,
+        "bpm": 120,
+        "timestamp": "2025-12-15T17:58:57.590458"
+    }
+]
