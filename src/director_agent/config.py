@@ -25,10 +25,10 @@ class Settings(BaseSettings):
     
     # Tool Paths
     DEEP_RESEARCH_CMD: str = "deep-research"
-VEO_CMD: str = "generate-veo"
-TTS_CMD: str = "gen-tts"
-MUSIC_CMD: str = "gen-music"
-IMAGE_CMD: str = "generate-gemini-image"
+    VEO_CMD: str = "generate-veo"
+    TTS_CMD: str = "gen-tts"
+    MUSIC_CMD: str = "gen-music"
+    IMAGE_CMD: str = "generate-gemini-image"
     
     # Project Settings
     OUTPUT_DIR: Path = Field(default=Path.home() / "Movies", description="Default output directory for movies")
