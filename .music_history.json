@@ -22,5 +22,93 @@
         "duration": 5,
         "bpm": 120,
         "timestamp": "2025-12-15T17:58:57.590458"
+    },
+    {
+        "prompt": "Clean, modern, minimalist electronic beat",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_2/score.mp3",
+        "duration": 6,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:34:26.317266"
+    },
+    {
+        "prompt": "Intriguing, slightly tense orchestral underscore",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_1/score.mp3",
+        "duration": 7,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:34:34.781929"
+    },
+    {
+        "prompt": "Reflective, slightly melancholic piano",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_3/score.mp3",
+        "duration": 8,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:34:48.084741"
+    },
+    {
+        "prompt": "Neutral, informative electronic track",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_4/score.mp3",
+        "duration": 7,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:35:29.286387"
+    },
+    {
+        "prompt": "Driving, percussive sports anthem",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_5/score.mp3",
+        "duration": 7,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:35:32.001168"
+    },
+    {
+        "prompt": "Nostalgic, light classical music with a hint of film grain crackle",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_6/score.mp3",
+        "duration": 6,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:35:50.152698"
+    },
+    {
+        "prompt": "Clean, modern, minimalist electronic beat",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_8/score.mp3",
+        "duration": 7,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:36:28.756347"
+    },
+    {
+        "prompt": "Precise, futuristic, ambient electronic soundscape",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_7/score.mp3",
+        "duration": 7,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:36:30.636794"
+    },
+    {
+        "prompt": "Stealthy, suspenseful electronic music with a strong rhythm",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_9/score.mp3",
+        "duration": 6,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:36:46.063542"
+    },
+    {
+        "prompt": "Uplifting, conclusive synth and orchestral blend",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_11/score.mp3",
+        "duration": 6,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:37:25.775749"
+    },
+    {
+        "prompt": "Dark, sweeping, epic orchestral score reminiscent of Star Wars",
+        "optimized_prompt": null,
+        "output_file": "/tmp/director-agent/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}/scene_10/score.mp3",
+        "duration": 7,
+        "bpm": 120,
+        "timestamp": "2025-12-15T19:37:26.673143"
     }
 ]

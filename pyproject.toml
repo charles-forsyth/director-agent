@@ -1,6 +1,6 @@
 [project]
 name = "director-agent"
-version = "0.7.0"
+version = "0.8.0"
 description = "An autonomous movie studio agent orchestrating Gemini, Veo, and TTS tools."
 authors = [{name = "Chuck Forsyth", email = "forsythc@ucr.edu"}]
 readme = "README.md"
