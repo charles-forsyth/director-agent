@@ -17,7 +17,12 @@ class Editor:
             try:
                 # --- IMAGE SCENE (with Ken Burns Effect) ---
                 # Zoom in 10% over the duration (z=zoom+0.0015)
-                image_in = ffmpeg.input(str(scene_data['image']), loop=1, t=scene.duration)
+                # pattern_type='none' is crucial to prevent ffmpeg from looking for sequences
+                image_in = ffmpeg.input(str(scene_data['image']), loop=1, t=scene.duration) # ffmpeg-python might not expose pattern_type easily in input(), checking args...
+                
+                # We'll use kwargs for pattern_type
+                image_in = ffmpeg.input(str(scene_data['image']), loop=1, t=scene.duration, **{'pattern_type': 'none'})
+                
                 video_stream = image_in.filter('scale', '3840x2160').filter('zoompan', z='min(zoom+0.0015,1.5)', d=scene.duration*30, s='1920x1080')
                 
                 # Audio Mix
