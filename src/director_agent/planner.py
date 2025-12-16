@@ -22,7 +22,7 @@ class Planner:
     def _run_deep_research(self, topic: str) -> str:
         print(f"🕵️  Researching: {topic}...")
         try:
-            output_file = settings.TEMP_DIR / "research_output.md"
+            output_file = settings.RUN_TEMP_DIR / "research_output.md"
             cmd = [
                 settings.DEEP_RESEARCH_CMD, "research", topic,
                 "--output", str(output_file)

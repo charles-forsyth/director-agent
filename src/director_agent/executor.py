@@ -36,7 +36,7 @@ class Executor:
 
     def _generate_reference(self, group_name: str, prompt: str):
         print(f"🎨 Generating Reference Asset: '{group_name}'...")
-        ref_path = settings.TEMP_DIR / f"ref_{group_name}.png"
+        ref_path = settings.RUN_TEMP_DIR / f"ref_{group_name}.png"
         
         if not ref_path.exists():
             cmd = [
@@ -55,7 +55,7 @@ class Executor:
 
     def _produce_scene_assets(self, scene: Scene) -> Dict[str, Path]:
         print(f"🎬 Scene {scene.id} ({scene.image_style}): Starting...")
-        scene_dir = settings.TEMP_DIR / f"scene_{scene.id}"
+        scene_dir = settings.RUN_TEMP_DIR / f"scene_{scene.id}"
         scene_dir.mkdir(exist_ok=True, parents=True)
         
         assets = {"type": scene.visual_type}

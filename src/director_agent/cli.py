@@ -35,13 +35,14 @@ def main():
     
     args = parser.parse_args()
 
+    # Initialize Unique Run Environment
+    settings.check_setup()
+    run_dir = settings.init_run()
+    
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
+        print(f"📁 Working Directory: {run_dir}")
     
-    # 1. Check for First Run / Missing Config
-    # This might exit if setup is needed
-    settings.check_setup()
-
     if args.output_dir:
         settings.OUTPUT_DIR = args.output_dir
 

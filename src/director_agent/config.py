@@ -1,7 +1,9 @@
 import os
 import sys
+import uuid
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from rich.console import Console
@@ -23,14 +25,19 @@ class Settings(BaseSettings):
     
     # Tool Paths
     DEEP_RESEARCH_CMD: str = "deep-research"
-    VEO_CMD: str = "generate-veo"
-    TTS_CMD: str = "gen-tts"
-    MUSIC_CMD: str = "gen-music"
-    IMAGE_CMD: str = "generate-gemini-image"
+VEO_CMD: str = "generate-veo"
+TTS_CMD: str = "gen-tts"
+MUSIC_CMD: str = "gen-music"
+IMAGE_CMD: str = "generate-gemini-image"
     
     # Project Settings
     OUTPUT_DIR: Path = Field(default=Path.home() / "Movies", description="Default output directory for movies")
-    TEMP_DIR: Path = Field(default=Path(f"/tmp/{APP_NAME}"), description="Temporary working directory")
+    
+    # We define a base temp dir, but individual runs will create subdirs
+    BASE_TEMP_DIR: Path = Field(default=Path(f"/tmp/{APP_NAME}"), description="Base temporary directory")
+    
+    # This will be set dynamically per run
+    RUN_TEMP_DIR: Optional[Path] = None
 
     model_config = SettingsConfigDict(
         env_file=[
@@ -41,10 +48,16 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-    def ensure_dirs(self):
-        """Ensure critical directories exist."""
+    def init_run(self):
+        """
+        Initializes a unique temporary directory for this specific execution context.
+        Call this at the start of the CLI.
+        """
+        run_id = f"run_{{datetime.now().strftime('%Y%m%d_%H%M%S')}}_{{uuid.uuid4().hex[:6]}}"
+        self.RUN_TEMP_DIR = self.BASE_TEMP_DIR / run_id
+        self.RUN_TEMP_DIR.mkdir(parents=True, exist_ok=True)
         self.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        self.TEMP_DIR.mkdir(parents=True, exist_ok=True)
+        return self.RUN_TEMP_DIR
 
     def check_setup(self):
         """
