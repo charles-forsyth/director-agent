@@ -37,20 +37,23 @@ class Planner:
             return f"Basic knowledge about {topic}"
 
     def _synthesize_plan(self, topic: str, context: str) -> ProductionManifest:
-        print("🧠 Synthesizing execution plan (Presentation Mode)...")
+        print("🧠 Synthesizing execution plan (Infographic & Presentation Mode)...")
         
         if not self.model:
              raise ValueError("Gemini API Key is missing.")
 
         prompt = f"""
-        You are a Documentary Director specializing in "Ken Burns" style visual storytelling.
-        Goal: Create a cinematic slideshow presentation about "{topic}" using high-resolution static imagery, narration, and music.
+        You are a Visual Director creating an educational video presentation.
+        Goal: Create a slideshow about "{topic}" that mixes rich cinematic imagery with clear, modern infographics.
         Context: {context[:5000]} (truncated)
         
         Instructions:
-        1. **Visuals:** All scenes MUST use `visual_type="image"`. Describe rich, detailed, 4K static images (diagrams, photos, art).
-        2. **Audio:** Every scene needs `narration_text` and a `music_prompt`.
-        3. **Pacing:** Scenes should be 5-10 seconds long to allow for reading/viewing.
+        1. **Visual Variety:** You MUST alternate between styles.
+           - Use **'Cinematic'** for establishing shots, mood, and real-world examples.
+           - Use **'Infographic'** for explaining data, timelines, concepts, or processes.
+           - Use **'Vintage Map'** or **'3D Model'** where appropriate.
+        2. **Infographic Prompts:** When requesting an infographic, specify: "Minimalist vector art, clean lines, white background, clear iconography representing [concept]". Avoid requesting complex text.
+        3. **Pacing:** Scenes 5-10 seconds.
         
         Output: A strictly valid JSON object adhering to this schema:
         {{
@@ -62,10 +65,21 @@ class Planner:
                     "id": 1,
                     "duration": 6,
                     "visual_type": "image",
-                    "visual_prompt": "A high-resolution map of the ancient world, parchment texture, detailed labels, cinematic lighting",
+                    "image_style": "Cinematic",
+                    "visual_prompt": "A dramatic 4K shot of a stormy ocean...",
                     "audio_source": "generated",
-                    "narration_text": "In the beginning, the world was vast and unknown...",
-                    "music_prompt": "Epic orchestral opening"
+                    "narration_text": "The ocean is a force of nature...",
+                    "music_prompt": "Stormy orchestral"
+                }},
+                {{
+                    "id": 2,
+                    "duration": 8,
+                    "visual_type": "image",
+                    "image_style": "Infographic",
+                    "visual_prompt": "A clean, modern infographic showing the water cycle. Flat design, blue and white color palette, simple icons for rain and evaporation.",
+                    "audio_source": "generated",
+                    "narration_text": "It functions through a continuous cycle of evaporation...",
+                    "music_prompt": "Light electronic beat"
                 }}
             ]
         }}

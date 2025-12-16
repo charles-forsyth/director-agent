@@ -12,11 +12,7 @@ class Executor:
         self.reference_cache: Dict[str, Path] = {}
 
     def produce_assets(self, manifest: ProductionManifest) -> Dict[int, Dict[str, Path]]:
-        """
-        Orchestrates asset generation.
-        """
-        # 1. Pre-generate References
-        # We scan for scenes that define a new reference_prompt
+        # 1. Pre-generate References (if any)
         for scene in manifest.scenes:
             if scene.reference_group and scene.reference_prompt and scene.reference_group not in self.reference_cache:
                 self._generate_reference(scene.reference_group, scene.reference_prompt)
@@ -39,7 +35,6 @@ class Executor:
         return assets
 
     def _generate_reference(self, group_name: str, prompt: str):
-        """Generates and caches a reference image."""
         print(f"🎨 Generating Reference Asset: '{group_name}'...")
         ref_path = settings.TEMP_DIR / f"ref_{group_name}.png"
         
@@ -50,57 +45,45 @@ class Executor:
                 "--output-dir", str(ref_path.parent),
                 "--filename", ref_path.name,
                 "--count", "1",
-                "--style", "Cinematic",
+                "--style", "Cinematic", # References usually default to Cinematic unless specified
                 "--image-size", "4K",
                 "--aspect-ratio", "16:9"
             ]
-            print(f"  [MOCK] Running ImageGen (Ref): {' '.join(cmd)}")
-            subprocess.run([
-                "ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=green:s=3840x2160",
-                "-frames:v", "1", str(ref_path)
-            ], check=True, capture_output=True)
+            self._run_tool(cmd, ref_path)
             
         self.reference_cache[group_name] = ref_path
 
     def _produce_scene_assets(self, scene: Scene) -> Dict[str, Path]:
-        print(f"🎬 Scene {scene.id} ({scene.visual_type}): Starting...")
+        print(f"🎬 Scene {scene.id} ({scene.image_style}): Starting...")
         scene_dir = settings.TEMP_DIR / f"scene_{scene.id}"
         scene_dir.mkdir(exist_ok=True, parents=True)
         
         assets = {"type": scene.visual_type}
 
         # --- Visuals ---
-        if scene.visual_type == "video":
-            assets["video"] = scene_dir / "video.mp4"
-            ref_image = self.reference_cache.get(scene.reference_group) if scene.reference_group else None
-            if not assets["video"].exists():
-                self._run_veo(scene.visual_prompt, scene.duration, assets["video"], ref_image)
-        else:
-            assets["image"] = scene_dir / "image.png"
-            if not assets["image"].exists():
-                self._run_image_gen(scene.visual_prompt, assets["image"])
+        assets["image"] = scene_dir / "image.png"
+        if not assets["image"].exists():
+            # Use the specific style requested by the Planner
+            self._run_image_gen(scene.visual_prompt, assets["image"], scene.image_style)
 
         # --- Audio ---
-        if scene.audio_source == "generated":
-            if scene.narration_text:
-                assets["audio"] = scene_dir / "narration.mp3"
-                if not assets["audio"].exists():
-                    self._run_tts(scene.narration_text, scene.voice_id, assets["audio"])
-            
-            if scene.music_prompt:
-                assets["music"] = scene_dir / "score.mp3"
-                if not assets["music"].exists():
-                    self._run_music(scene.music_prompt, scene.duration, assets["music"])
+        if scene.narration_text:
+            assets["audio"] = scene_dir / "narration.mp3"
+            if not assets["audio"].exists():
+                self._run_tts(scene.narration_text, scene.voice_id, assets["audio"])
         
-        # If audio_source is 'native' (Veo), we don't generate separate audio tracks
-        # The Editor will use the audio inside the video.mp4
-
+        if scene.music_prompt:
+            assets["music"] = scene_dir / "score.mp3"
+            if not assets["music"].exists():
+                self._run_music(scene.music_prompt, scene.duration, assets["music"])
+        
         return assets
 
-    # --- Tool Wrappers (Real Mode) ---
+    # --- Tool Wrappers ---
     def _run_tool(self, cmd: list, output_path: Path):
         print(f"  Running: {' '.join(cmd)}")
         try:
+            # We must use text=True to get string output for logging
             result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             print(f"  ❌ Error running {' '.join(cmd)}: {e.stderr}")
@@ -108,23 +91,15 @@ class Executor:
         
         if not output_path.exists() or output_path.stat().st_size == 0:
             print(f"  ❌ Tool finished but output file is missing or empty: {output_path}")
-            # Depending on robustness needs, we might raise or allow partial failure
-            # For now, let's allow it but log it clearly
-            pass
 
-    def _run_veo(self, prompt: str, duration: int, output_path: Path, ref_image: Optional[Path]):
-        cmd = [settings.VEO_CMD, prompt, "--duration", str(duration), "--aspect-ratio", "16:9", "--output-file", str(output_path)]
-        if ref_image: cmd.extend(["--ref-images", str(ref_image)])
-        self._run_tool(cmd, output_path)
-
-    def _run_image_gen(self, prompt: str, output_path: Path):
+    def _run_image_gen(self, prompt: str, output_path: Path, style: str):
         cmd = [
             settings.IMAGE_CMD,
             "--prompt", prompt,
             "--output-dir", str(output_path.parent),
             "--filename", output_path.name,
             "--count", "1",
-            "--style", "Cinematic",
+            "--style", style,  # Dynamic Style!
             "--image-size", "4K",
             "--aspect-ratio", "16:9"
         ]
