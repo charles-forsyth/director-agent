@@ -83,14 +83,24 @@ class Executor:
     def _run_tool(self, cmd: list, output_path: Path):
         print(f"  Running: {' '.join(cmd)}")
         try:
-            # We must use text=True to get string output for logging
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        except subprocess.CalledProcessError as e:
-            print(f"  ❌ Error running {' '.join(cmd)}: {e.stderr}")
+            # capture_output=True captures both stdout and stderr
+            result = subprocess.run(cmd, check=False, capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                print(f"  ❌ Tool Failed (Exit Code {result.returncode})")
+                print(f"  STDOUT: {result.stdout}")
+                print(f"  STDERR: {result.stderr}")
+                raise RuntimeError(f"Tool execution failed: {cmd[0]}")
+            
+            if not output_path.exists() or output_path.stat().st_size == 0:
+                print(f"  ❌ Tool finished (Exit 0) but output missing: {output_path}")
+                print(f"  STDOUT: {result.stdout}")
+                print(f"  STDERR: {result.stderr}")
+                raise RuntimeError(f"Tool produced no output: {cmd[0]}")
+                
+        except Exception as e:
+            print(f"  ❌ Execution Error: {e}")
             raise
-        
-        if not output_path.exists() or output_path.stat().st_size == 0:
-            print(f"  ❌ Tool finished but output file is missing or empty: {output_path}")
 
     def _run_image_gen(self, prompt: str, output_path: Path, style: str):
         cmd = [
