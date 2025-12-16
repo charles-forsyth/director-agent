@@ -12,7 +12,7 @@ from director_agent.editor import Editor
 class Director:
     def __init__(self):
         self.logger = logging.getLogger("director_agent")
-        settings.ensure_dirs()
+        # settings.ensure_dirs() is handled by cli.py -> settings.init_run()
         
         self.planner = Planner()
         self.executor = Executor()
